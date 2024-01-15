@@ -1,7 +1,6 @@
 package study.querydsl;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +13,7 @@ import study.querydsl.entity.Team;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
 @SpringBootTest
@@ -78,7 +77,7 @@ public class QuerydslBasicTest {
     
     @DisplayName("querydsl을 이용해 member1을 찾을 수 있다")
     @Test
-    public void querydslTest() throws Exception {
+    public void querydslTest() {
 //        JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QMember m = new QMember("m");
 
