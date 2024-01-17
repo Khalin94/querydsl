@@ -2,6 +2,7 @@ package study.querydsl;
 
 import com.querydsl.core.NonUniqueResultException;
 import com.querydsl.core.QueryResults;
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
+import study.querydsl.entity.QTeam;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
@@ -18,6 +20,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static study.querydsl.entity.QMember.member;
+import static study.querydsl.entity.QTeam.*;
 
 @Transactional
 @SpringBootTest
@@ -28,20 +31,20 @@ public class QuerydslBasicTest {
 
     JPAQueryFactory queryFactory;
 
-    private Member createMember(String username, int age){
+    private Member createMember(String username, int age) {
         return createMember(username, age, null);
     }
 
-    private Member createMember(String username, int age, Team team){
+    private Member createMember(String username, int age, Team team) {
         return Member.builder()
-                             .username(username)
-                             .age(age)
-                             .team(team)
-                             .build();
+                     .username(username)
+                     .age(age)
+                     .team(team)
+                     .build();
     }
 
     @BeforeEach
-    void before(){
+    void before() {
         queryFactory = new JPAQueryFactory(em);
         Team teamA = Team.builder()
                          .name("teamA")
@@ -82,15 +85,15 @@ public class QuerydslBasicTest {
 
     @DisplayName("jpql을 이용해 member1을 찾을 수 있다.")
     @Test
-    void jpqlTest(){
+    void jpqlTest() {
         // find member1
         Member member = em.createQuery("select m from Member m where username = :username", Member.class)
-                                .setParameter("username", "member1")
-                                .getSingleResult();
+                          .setParameter("username", "member1")
+                          .getSingleResult();
 
         assertThat(member.getUsername()).isEqualTo("member1");
     }
-    
+
     @DisplayName("querydsl을 이용해 member1을 찾을 수 있다")
     @Test
     public void querydslTest() {
@@ -103,9 +106,9 @@ public class QuerydslBasicTest {
 //                                     .where(QMember.member.username.eq("member1"))
 //                                     .fetchOne();
         Member member1 = queryFactory.select(member)
-                                    .from(member)
-                                    .where(member.username.eq("member1"))
-                                    .fetchOne();
+                                     .from(member)
+                                     .where(member.username.eq("member1"))
+                                     .fetchOne();
 
         assertThat(member1.getUsername()).isEqualTo("member1");
 
@@ -130,11 +133,11 @@ public class QuerydslBasicTest {
         //given
         //when
         Member member1 = queryFactory.selectFrom(member)
-                                      .where(
-                                              member.username.eq("member1"),
-                                              member.age.between(10, 30)
-                                      )
-                                      .fetchOne();
+                                     .where(
+                                             member.username.eq("member1"),
+                                             member.age.between(10, 30)
+                                     )
+                                     .fetchOne();
 
         //then
         assertThat(member1.getUsername()).isEqualTo("member1");
@@ -153,25 +156,26 @@ public class QuerydslBasicTest {
         assertThat(members.size()).isEqualTo(4);
 
         // 리스트가 반환되는 쿼리에 fetchOne을 사용하면 javax.persistence.NonUniqueResultException 이 발생한다.
-        assertThatThrownBy(() ->{
+        assertThatThrownBy(() -> {
             queryFactory.selectFrom(member)
-                                         .fetchOne();
+                        .fetchOne();
         }).isInstanceOf(NonUniqueResultException.class);
 
         //fetchFirst = limit 1과 같다
         Member member1 = queryFactory.selectFrom(member)
-                .orderBy(member.username.asc())
+                                     .orderBy(member.username.asc())
                                      .fetchFirst();
         assertThat(member1.getUsername()).isEqualTo("member1");
 
         QueryResults<Member> results = queryFactory.selectFrom(member)
-                                                              .fetchResults();
+                                                   .fetchResults();
 
         long total = results.getTotal();
         List<Member> results1 = results.getResults();
 
         assertThat(total).isEqualTo(4);
-        assertThat(results1.get(0).getUsername()).isEqualTo("member1");
+        assertThat(results1.get(0)
+                           .getUsername()).isEqualTo("member1");
 
     }
 
@@ -186,14 +190,17 @@ public class QuerydslBasicTest {
         em.persist(member7);
         //when
         List<Member> members = queryFactory.selectFrom(member)
-                                         .orderBy(member.age.desc(), member.username.asc()
-                                                                                    .nullsLast()) // null 이면 마지막에 나온다.
-                                         .fetch();
+                                           .orderBy(member.age.desc(), member.username.asc()
+                                                                                      .nullsLast()) // null 이면 마지막에 나온다.
+                                           .fetch();
 
         //then
-        assertThat(members.get(0).getUsername()).isEqualTo("member6");
-        assertThat(members.get(1).getUsername()).isEqualTo("member7");
-        assertThat(members.get(2).getUsername()).isNull();
+        assertThat(members.get(0)
+                          .getUsername()).isEqualTo("member6");
+        assertThat(members.get(1)
+                          .getUsername()).isEqualTo("member7");
+        assertThat(members.get(2)
+                          .getUsername()).isNull();
 
     }
 
@@ -202,10 +209,10 @@ public class QuerydslBasicTest {
         //given
         //when
         List<Member> members = queryFactory.selectFrom(member)
-                                         .orderBy(member.username.desc())
-                                         .offset(1)
-                                         .limit(2)
-                                         .fetch();
+                                           .orderBy(member.username.desc())
+                                           .offset(1)
+                                           .limit(2)
+                                           .fetch();
 
         for (Member member1 : members) {
             System.out.println("member1 = " + member1);
@@ -220,17 +227,78 @@ public class QuerydslBasicTest {
         //given
         //when
         QueryResults<Member> results = queryFactory.selectFrom(member)
-                                                              .orderBy(member.username.desc())
-                                                              .offset(1)
-                                                              .limit(2)
-                                                              .fetchResults();
+                                                   .orderBy(member.username.desc())
+                                                   .offset(1)
+                                                   .limit(2)
+                                                   .fetchResults();
 
         //then
         assertThat(results.getTotal()).isEqualTo(4);
-        assertThat(results.getResults().size()).isEqualTo(2);
+        assertThat(results.getResults()
+                          .size()).isEqualTo(2);
         assertThat(results.getLimit()).isEqualTo(2);
         assertThat(results.getOffset()).isEqualTo(1);
     }
 
+    @Test
+    public void aggregation() throws Exception {
+        //given
+        //when
+        List<Tuple> memberAggregation = queryFactory.select(member.count(),
+                                                member.age.sum(),
+                                                member.age.max(),
+                                                member.age.min(),
+                                                member.age.avg()
+                                        )
+                                        .from(member)
+                                        .fetch();
+
+        Tuple tuple = memberAggregation.get(0);
+
+        //then
+        assertThat(tuple.get(member.count())).isEqualTo(4);
+        assertThat(tuple.get(member.age.sum())).isEqualTo(100);
+        assertThat(tuple.get(member.age.max())).isEqualTo(40);
+        assertThat(tuple.get(member.age.min())).isEqualTo(10);
+        assertThat(tuple.get(member.age.avg())).isEqualTo(25);
+    }
+
+    @Test
+    public void groupBy() throws Exception {
+        //given
+        //when
+        List<Tuple> fetch = queryFactory.select(team.name, member.age.avg())
+                                        .from(member)
+                                        .join(member.team, team)
+                                        .groupBy(team.name)
+                                        .fetch();
+
+        Tuple teamA = fetch.get(0);
+        Tuple teamB = fetch.get(1);
+
+
+        //then
+        assertThat(teamA.get(team.name)).isEqualTo("teamA");
+        assertThat(teamA.get(member.age.avg())).isEqualTo(15);
+
+        assertThat(teamB.get(team.name)).isEqualTo("teamB");
+        assertThat(teamB.get(member.age.avg())).isEqualTo(35);
+
+        List<Tuple> fetch1 = queryFactory.select(team.name, member.age.max())
+                                         .from(team)
+                                         .join(member)
+                                         .on(team.id.eq(member.team.id))
+                                         .groupBy(team.name)
+                                         .fetch();
+        Tuple teamAA = fetch1.get(0);
+        Tuple teamBB = fetch1.get(1);
+
+        assertThat(teamAA.get(team.name)).isEqualTo("teamA");
+        assertThat(teamAA.get(member.age.max())).isEqualTo(20);
+
+        assertThat(teamBB.get(team.name)).isEqualTo("teamB");
+        assertThat(teamBB.get(member.age.max())).isEqualTo(40);
+
+    }
 
 }
