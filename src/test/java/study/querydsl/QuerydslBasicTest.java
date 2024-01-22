@@ -14,7 +14,9 @@ import study.querydsl.entity.QTeam;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -299,6 +301,150 @@ public class QuerydslBasicTest {
         assertThat(teamBB.get(team.name)).isEqualTo("teamB");
         assertThat(teamBB.get(member.age.max())).isEqualTo(40);
 
+    }
+
+    @Test
+    public void join() throws Exception {
+        //given
+//        Member teamA = Member.builder()
+//                             .username("teamA")
+//                             .build();
+//        Member teamB = Member.builder()
+//                             .username("teamB")
+//                             .build();
+//        em.persist(teamA);
+//        em.persist(teamB);
+        //when
+        List<Member> teamAList = queryFactory.select(member)
+                                         .from(member)
+                                         .join(member.team, team)
+                                         .where(team.name.eq("teamA"))
+                                         .fetch();
+
+        //then
+        assertThat(teamAList).extracting("username").containsExactly("member1", "member2");
+    }
+
+    @Test
+    public void thetaJoin() throws Exception {
+        //given
+        Member teamA = Member.builder()
+                             .username("teamA")
+                             .build();
+        Member teamB = Member.builder()
+                             .username("teamB")
+                             .build();
+        Member teamC = Member.builder()
+                             .username("teamC")
+                             .build();
+        em.persist(teamA);
+        em.persist(teamB);
+        em.persist(teamC);
+        //when
+        // 이렇게 조인하는 건 외부조인 불가능 -> on을 사용해야 된다.
+        List<Member> members = queryFactory.select(member)
+                                         .from(member, team)
+                                         .where(member.username.eq(team.name))
+                                         .fetch();
+
+        //then
+        assertThat(members).extracting("username").containsExactly("teamA", "teamB");
+    }
+
+    @Test
+    public void joinFiltering() throws Exception {
+        //given
+
+        //when
+        List<Tuple> result = queryFactory.select(member, team)
+                                         .from(member)
+                                         .leftJoin(member.team, team)
+                                         .on(team.name.eq("teamA"))
+                                         .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+        //then
+
+    }
+
+    @Test
+    public void joinOnNoRelation() throws Exception {
+        //given
+        Member teamA = Member.builder()
+                             .username("teamA")
+                             .build();
+        Member teamB = Member.builder()
+                             .username("teamB")
+                             .build();
+        Member teamC = Member.builder()
+                             .username("teamC")
+                             .build();
+        em.persist(teamA);
+        em.persist(teamB);
+        em.persist(teamC);
+        //when
+        List<Tuple> result = queryFactory.select(member, team)
+                                        .from(member)
+                                        .leftJoin(team)
+                                        .on(member.username.eq(team.name))
+                                        .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+
+        List<Tuple> joinTeamResult = queryFactory.select(member, team)
+                                                 .from(member)
+                                                 .join(team)
+                                                 .on(member.team.eq(team))
+                                                 .fetch();
+        for (Tuple tuple : joinTeamResult) {
+            System.out.println("tuple = " + tuple);
+        }
+        //then
+    }
+
+    @PersistenceUnit
+    EntityManagerFactory emf;
+
+    @Test
+    public void fetchJoinNotUse() throws Exception {
+        em.flush();
+        em.clear();
+        //given
+        //when
+        Member member1 = queryFactory.select(member)
+                                     .from(member)
+                                     .where(member.username.eq("member1"))
+                                     .fetchOne();
+
+        boolean isLoaded = emf.getPersistenceUnitUtil()
+                            .isLoaded(member1.getTeam());
+
+        //then
+        assertThat(isLoaded).as("페치조인 미적용").isFalse();
+    }
+
+    @Test
+    public void fetchJoinUse() throws Exception {
+        //given
+        em.flush();
+        em.clear();
+        //when
+        Member member1 = queryFactory.select(member)
+                                     .from(member)
+                                     .join(member.team, team)
+                                     .fetchJoin()
+                                     .where(member.username.eq("member1"))
+                                     .fetchOne();
+
+        boolean isLoaded = emf.getPersistenceUnitUtil()
+                            .isLoaded(member1.getTeam());
+
+        //then
+        assertThat(isLoaded).as("페치조인 적용").isTrue();
     }
 
 }
