@@ -3,6 +3,10 @@ package study.querydsl;
 import com.querydsl.core.NonUniqueResultException;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,13 +14,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
-import study.querydsl.entity.QTeam;
+import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -445,6 +450,207 @@ public class QuerydslBasicTest {
 
         //then
         assertThat(isLoaded).as("페치조인 적용").isTrue();
+    }
+    
+    @Test
+    public void whereSubQuery() throws Exception {
+        //given
+        //when
+        QMember subMember = new QMember("subMember");
+        List<Member> maxAgeMembers = queryFactory.select(member)
+                                         .from(member)
+                                         .where(member.age.eq(
+                                                 JPAExpressions.select(subMember.age.max())
+                                                               .from(subMember)
+                                         ))
+                                         .fetch();
+        for (Member maxAgeMember : maxAgeMembers) {
+            System.out.println("maxAgeMember = " + maxAgeMember);
+        }
+
+        //then
+        assertThat(maxAgeMembers).extracting("age").containsExactly(40);
+    }
+    
+    @Test
+    public void whereSubQueryGoe() throws Exception {
+        //given
+        //when
+        QMember subMember = new QMember("subMember");
+        List<Member> goeAvgAgeMembers = queryFactory.select(member)
+                                         .from(member)
+                                         .where(
+                                                 member.age.goe(
+                                                         JPAExpressions.select(subMember.age.avg())
+                                                                       .from(subMember)
+                                                 )
+                                         )
+                                         .fetch();
+
+        for (Member goeAvgAgeMember : goeAvgAgeMembers) {
+            System.out.println("goeAvgAgeMember = " + goeAvgAgeMember);
+        }
+
+        //then
+        assertThat(goeAvgAgeMembers).extracting("username").containsExactly("member3", "member4");
+    }
+
+    @Test
+    public void subQueryIn() throws Exception {
+        //given
+        //when
+        QMember subMember = new QMember("subMember");
+        List<Member> gtMembers = queryFactory
+                .select(member)
+                .from(member)
+                .where(member.age.in(
+                        JPAExpressions.select(subMember.age)
+                                      .from(subMember)
+                                      .where(subMember.age.gt(10))
+                ))
+                .fetch();
+
+        for (Member gtMember : gtMembers) {
+            System.out.println("gtMember = " + gtMember);
+        }
+
+        //then
+        assertThat(gtMembers).extracting("age").containsExactly(20, 30, 40);
+    }
+    
+    @Test
+    public void selectSubQuery() throws Exception {
+        //given
+        QMember subMember = new QMember("subMember");
+        //when
+        List<Tuple> fetch = queryFactory.select(member.username, JPAExpressions.select(subMember.age.avg())
+                                                                               .from(subMember))
+                                        .from(member)
+                                        .fetch();
+
+
+        System.out.println("fetch = " + fetch);
+
+        //then
+    }
+
+    @Test
+    public void basicCase() throws Exception {
+        //given
+        //when
+        List<String> fetch = queryFactory.select(
+                                                 member.age.when(10)
+                                                           .then("열살").
+                                                           when(20)
+                                                           .then("스무살")
+                                                           .otherwise("기타")
+                                         )
+                                         .from(member)
+                                         .fetch();
+
+        for (String s : fetch) {
+            System.out.println("s = " + s);
+        }
+
+        List<Member> fetch1 = queryFactory.selectFrom(member)
+                                          .fetch();
+
+        List<String> memberAge = new ArrayList<>();
+        for (Member f : fetch1) {
+            if (f.getAge() == 10) memberAge.add("열살");
+            else if (f.getAge() == 20) memberAge.add("스무살");
+            else memberAge.add("기타");
+        }
+
+        for (String s : memberAge) {
+            System.out.println("s = " + s);
+        }
+
+        //then
+    }
+
+    @Test
+    public void complexCase() throws Exception {
+        //given
+        //when
+        List<String> ageList = queryFactory.select(new CaseBuilder().when(member.age.between(0, 20))
+                                                               .then("0살 ~ 20살")
+                                                               .when(member.age.between(21, 30))
+                                                               .then("21살 ~ 30살")
+                                                               .otherwise("기타")
+                                      )
+                                      .from(member)
+                                      .fetch();
+
+        for (String s : ageList) {
+            System.out.println("s = " + s);
+        }
+
+        //then
+        assertThat(ageList.size()).isEqualTo(4);
+    }
+    
+    @Test
+    public void constant() throws Exception {
+        //given
+        //when
+        List<Tuple> constantMemberList = queryFactory.select(member, Expressions.constant("A"))
+                                    .from(member)
+                                    .fetch();
+
+        for (Tuple tuple : constantMemberList) {
+            System.out.println("tuple = " + tuple);
+        }
+
+        //then
+    }
+
+    @Test
+    public void concat() throws Exception {
+        //given
+        //when
+        List<String> result = queryFactory.select(member.username.concat("_")
+                                                                .concat(member.age.stringValue()))
+                                         .from(member)
+                                         .where(member.username.eq("member1"))
+                                         .fetch();
+
+        System.out.println("result = " + result);
+
+        //then
+        assertThat(result).contains("member1_10");
+    }
+
+    @Test
+    public void simpleProjection() throws Exception {
+        //given
+        //when
+        List<String> usernames = queryFactory.select(member.username)
+                                         .from(member)
+                                         .fetch();
+
+        System.out.println("usernames = " + usernames);
+
+        //then
+    }
+    
+    @Test
+    public void tupleProjection() throws Exception {
+        //given
+        //when
+        List<Tuple> tuples = queryFactory.select(member.username, member.age)
+                                        .from(member)
+                                        .fetch();
+
+        for (Tuple tuple : tuples) {
+            String username = tuple.get(member.username);
+            Integer age = tuple.get(member.age);
+            System.out.println("username = " + username);
+            System.out.println("age = " + age);
+            System.out.println();
+        }
+
+        //then
     }
 
 }
