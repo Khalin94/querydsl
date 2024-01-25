@@ -1,9 +1,12 @@
 package study.querydsl;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.NonUniqueResultException;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -13,6 +16,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import study.querydsl.Dto.MemberDto;
+import study.querydsl.Dto.QUserDto;
+import study.querydsl.Dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
@@ -252,13 +258,13 @@ public class QuerydslBasicTest {
         //given
         //when
         List<Tuple> memberAggregation = queryFactory.select(member.count(),
-                                                member.age.sum(),
-                                                member.age.max(),
-                                                member.age.min(),
-                                                member.age.avg()
-                                        )
-                                        .from(member)
-                                        .fetch();
+                                                            member.age.sum(),
+                                                            member.age.max(),
+                                                            member.age.min(),
+                                                            member.age.avg()
+                                                    )
+                                                    .from(member)
+                                                    .fetch();
 
         Tuple tuple = memberAggregation.get(0);
 
@@ -321,13 +327,14 @@ public class QuerydslBasicTest {
 //        em.persist(teamB);
         //when
         List<Member> teamAList = queryFactory.select(member)
-                                         .from(member)
-                                         .join(member.team, team)
-                                         .where(team.name.eq("teamA"))
-                                         .fetch();
+                                             .from(member)
+                                             .join(member.team, team)
+                                             .where(team.name.eq("teamA"))
+                                             .fetch();
 
         //then
-        assertThat(teamAList).extracting("username").containsExactly("member1", "member2");
+        assertThat(teamAList).extracting("username")
+                             .containsExactly("member1", "member2");
     }
 
     @Test
@@ -348,12 +355,13 @@ public class QuerydslBasicTest {
         //when
         // 이렇게 조인하는 건 외부조인 불가능 -> on을 사용해야 된다.
         List<Member> members = queryFactory.select(member)
-                                         .from(member, team)
-                                         .where(member.username.eq(team.name))
-                                         .fetch();
+                                           .from(member, team)
+                                           .where(member.username.eq(team.name))
+                                           .fetch();
 
         //then
-        assertThat(members).extracting("username").containsExactly("teamA", "teamB");
+        assertThat(members).extracting("username")
+                           .containsExactly("teamA", "teamB");
     }
 
     @Test
@@ -391,10 +399,10 @@ public class QuerydslBasicTest {
         em.persist(teamC);
         //when
         List<Tuple> result = queryFactory.select(member, team)
-                                        .from(member)
-                                        .leftJoin(team)
-                                        .on(member.username.eq(team.name))
-                                        .fetch();
+                                         .from(member)
+                                         .leftJoin(team)
+                                         .on(member.username.eq(team.name))
+                                         .fetch();
 
         for (Tuple tuple : result) {
             System.out.println("tuple = " + tuple);
@@ -426,10 +434,11 @@ public class QuerydslBasicTest {
                                      .fetchOne();
 
         boolean isLoaded = emf.getPersistenceUnitUtil()
-                            .isLoaded(member1.getTeam());
+                              .isLoaded(member1.getTeam());
 
         //then
-        assertThat(isLoaded).as("페치조인 미적용").isFalse();
+        assertThat(isLoaded).as("페치조인 미적용")
+                            .isFalse();
     }
 
     @Test
@@ -446,53 +455,56 @@ public class QuerydslBasicTest {
                                      .fetchOne();
 
         boolean isLoaded = emf.getPersistenceUnitUtil()
-                            .isLoaded(member1.getTeam());
+                              .isLoaded(member1.getTeam());
 
         //then
-        assertThat(isLoaded).as("페치조인 적용").isTrue();
+        assertThat(isLoaded).as("페치조인 적용")
+                            .isTrue();
     }
-    
+
     @Test
     public void whereSubQuery() throws Exception {
         //given
         //when
         QMember subMember = new QMember("subMember");
         List<Member> maxAgeMembers = queryFactory.select(member)
-                                         .from(member)
-                                         .where(member.age.eq(
-                                                 JPAExpressions.select(subMember.age.max())
-                                                               .from(subMember)
-                                         ))
-                                         .fetch();
+                                                 .from(member)
+                                                 .where(member.age.eq(
+                                                         JPAExpressions.select(subMember.age.max())
+                                                                       .from(subMember)
+                                                 ))
+                                                 .fetch();
         for (Member maxAgeMember : maxAgeMembers) {
             System.out.println("maxAgeMember = " + maxAgeMember);
         }
 
         //then
-        assertThat(maxAgeMembers).extracting("age").containsExactly(40);
+        assertThat(maxAgeMembers).extracting("age")
+                                 .containsExactly(40);
     }
-    
+
     @Test
     public void whereSubQueryGoe() throws Exception {
         //given
         //when
         QMember subMember = new QMember("subMember");
         List<Member> goeAvgAgeMembers = queryFactory.select(member)
-                                         .from(member)
-                                         .where(
-                                                 member.age.goe(
-                                                         JPAExpressions.select(subMember.age.avg())
-                                                                       .from(subMember)
-                                                 )
-                                         )
-                                         .fetch();
+                                                    .from(member)
+                                                    .where(
+                                                            member.age.goe(
+                                                                    JPAExpressions.select(subMember.age.avg())
+                                                                                  .from(subMember)
+                                                            )
+                                                    )
+                                                    .fetch();
 
         for (Member goeAvgAgeMember : goeAvgAgeMembers) {
             System.out.println("goeAvgAgeMember = " + goeAvgAgeMember);
         }
 
         //then
-        assertThat(goeAvgAgeMembers).extracting("username").containsExactly("member3", "member4");
+        assertThat(goeAvgAgeMembers).extracting("username")
+                                    .containsExactly("member3", "member4");
     }
 
     @Test
@@ -515,9 +527,10 @@ public class QuerydslBasicTest {
         }
 
         //then
-        assertThat(gtMembers).extracting("age").containsExactly(20, 30, 40);
+        assertThat(gtMembers).extracting("age")
+                             .containsExactly(20, 30, 40);
     }
-    
+
     @Test
     public void selectSubQuery() throws Exception {
         //given
@@ -574,13 +587,13 @@ public class QuerydslBasicTest {
         //given
         //when
         List<String> ageList = queryFactory.select(new CaseBuilder().when(member.age.between(0, 20))
-                                                               .then("0살 ~ 20살")
-                                                               .when(member.age.between(21, 30))
-                                                               .then("21살 ~ 30살")
-                                                               .otherwise("기타")
-                                      )
-                                      .from(member)
-                                      .fetch();
+                                                                    .then("0살 ~ 20살")
+                                                                    .when(member.age.between(21, 30))
+                                                                    .then("21살 ~ 30살")
+                                                                    .otherwise("기타")
+                                           )
+                                           .from(member)
+                                           .fetch();
 
         for (String s : ageList) {
             System.out.println("s = " + s);
@@ -589,14 +602,14 @@ public class QuerydslBasicTest {
         //then
         assertThat(ageList.size()).isEqualTo(4);
     }
-    
+
     @Test
     public void constant() throws Exception {
         //given
         //when
         List<Tuple> constantMemberList = queryFactory.select(member, Expressions.constant("A"))
-                                    .from(member)
-                                    .fetch();
+                                                     .from(member)
+                                                     .fetch();
 
         for (Tuple tuple : constantMemberList) {
             System.out.println("tuple = " + tuple);
@@ -610,10 +623,10 @@ public class QuerydslBasicTest {
         //given
         //when
         List<String> result = queryFactory.select(member.username.concat("_")
-                                                                .concat(member.age.stringValue()))
-                                         .from(member)
-                                         .where(member.username.eq("member1"))
-                                         .fetch();
+                                                                 .concat(member.age.stringValue()))
+                                          .from(member)
+                                          .where(member.username.eq("member1"))
+                                          .fetch();
 
         System.out.println("result = " + result);
 
@@ -626,21 +639,21 @@ public class QuerydslBasicTest {
         //given
         //when
         List<String> usernames = queryFactory.select(member.username)
-                                         .from(member)
-                                         .fetch();
+                                             .from(member)
+                                             .fetch();
 
         System.out.println("usernames = " + usernames);
 
         //then
     }
-    
+
     @Test
     public void tupleProjection() throws Exception {
         //given
         //when
         List<Tuple> tuples = queryFactory.select(member.username, member.age)
-                                        .from(member)
-                                        .fetch();
+                                         .from(member)
+                                         .fetch();
 
         for (Tuple tuple : tuples) {
             String username = tuple.get(member.username);
@@ -652,5 +665,161 @@ public class QuerydslBasicTest {
 
         //then
     }
+
+    @Test
+    public void projectionsJPQL() throws Exception {
+        //given
+        List<MemberDto> members = em.createQuery("select new study.querydsl.Dto.MemberDto(m.username, m.age) from Member m", MemberDto.class)
+                                    .getResultList();
+
+        //when
+        for (MemberDto memberDto : members) {
+            System.out.println("memberDto = " + memberDto);
+        }
+
+        //then
+    }
+
+    @Test
+    public void findDtoBySetter() throws Exception {
+        //given
+        List<MemberDto> result = queryFactory.select(Projections.bean(MemberDto.class, member.username, member.age))
+                                             .from(member)
+                                             .fetch();
+        //when
+        System.out.println("result = " + result);
+
+        //then
+    }
+
+    @Test
+    public void findDtoByField() throws Exception {
+        //given
+        List<MemberDto> result = queryFactory.select(Projections.fields(MemberDto.class, member.username, member.age))
+                                             .from(member)
+                                             .fetch();
+        //when
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+
+        //then
+    }
+
+    @Test
+    public void findDtoByConstructor() throws Exception {
+        //given
+        List<MemberDto> result = queryFactory.select(Projections.constructor(MemberDto.class, member.username, member.age))
+                                             .from(member)
+                                             .fetch();
+        //when
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+
+        //then
+    }
+
+    @Test
+    public void findUserDtoNotMatchFieldName() throws Exception {
+        //given
+//        List<UserDto> result = queryFactory.select(
+//                            Projections.bean(UserDto.class,
+//                                             Expressions.as(member.username, "name")
+//                                             , member.age)
+//                                           )
+//                                           .from(member)
+//                                           .fetch();
+
+        List<UserDto> result = queryFactory.select(
+                                                   Projections.bean(UserDto.class,
+                                                           member.username.as("name"),
+                                                           member.age)
+                                           )
+                                           .from(member)
+                                           .fetch();
+
+        //when
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+        //then
+        assertThat(result).extracting("name")
+                          .contains("member1", "member2", "member3", "member4");
+    }
+
+    @Test
+    public void findUserDtoNotMatchFieldNameUseExpressions() throws Exception {
+        //given
+        QMember subMember = new QMember("subMember");
+//        List<UserDto> result = queryFactory.select(
+//                            Projections.bean(UserDto.class,
+//                                             member.username.as("name")
+//                                             , Expressions.as(JPAExpressions.select(subMember.age.max()).from(subMember), "age")
+//                            )
+//                                           )
+//                                           .from(member)
+//                                           .fetch();
+
+        List<UserDto> result = queryFactory.select(
+                                                   Projections.bean(UserDto.class,
+                                                           member.username.as("name")
+                                                           , ExpressionUtils.as(JPAExpressions.select(subMember.age.max())
+                                                                                              .from(subMember), "age")
+                                                   )
+                                           )
+                                           .from(member)
+                                           .fetch();
+
+
+        //when
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+        //then
+        assertThat(result).extracting("name")
+                          .contains("member1", "member2", "member3", "member4");
+    }
+
+    @Test
+    public void findUserDtoNotMatchNameConstructor() throws Exception {
+        //given
+        // constructor로 생성하는 경우 별도로 이름을 맞춰주지 않아도 된다.
+        // constructor는 type을 보고 데이터를 넣어준다.
+//        List<UserDto> result = queryFactory.select(Projections.constructor(UserDto.class, member.username, member.age))
+//                                          .from(member)
+//                                          .fetch();
+        QMember subMember = new QMember("subMember");
+        List<UserDto> result = queryFactory.select(Projections.constructor(UserDto.class, member.username, JPAExpressions.select(subMember.age.max())
+                                                                                                                         .from(subMember)))
+                                           .from(member)
+                                           .fetch();
+        //when
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+
+        assertThat(result).extracting("age")
+                          .contains(40);
+
+        //then
+    }
+
+    @Test
+    public void findUserByQueryProjectionAnnotation() throws Exception {
+        //given
+        // @QueryProjection 사용이 가장 깔끔한 방법이지만 Dto가 queryDsl에 종속된다.
+        List<UserDto> result = queryFactory.select(new QUserDto(member.username, member.age))
+                                           .from(member)
+                                           .fetch();
+        //when
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+
+        //then
+    }
+
 
 }
