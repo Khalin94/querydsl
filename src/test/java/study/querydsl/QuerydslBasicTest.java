@@ -6,7 +6,9 @@ import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -819,6 +821,91 @@ public class QuerydslBasicTest {
         }
 
         //then
+    }
+
+    @Test
+    public void dynamicQueryUseBooleanBuilder() throws Exception {
+        //given
+        String username = "member1";
+        Integer age = null;
+        List<Member> members = searchUser1(username, age);
+
+        //when
+        for (Member member1 : members) {
+            System.out.println("member1 = " + member1);
+        }
+        //then
+        assertThat(members).extracting("username")
+                           .containsExactly("member1");
+    }
+
+    private List<Member> searchUser1(String usernameCond, Integer ageCond) {
+
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (usernameCond != null) {
+            builder.and(member.username.eq(usernameCond));
+        }
+
+        if (ageCond != null) {
+            builder.and(member.age.eq(ageCond));
+        }
+
+
+        return queryFactory.select(member)
+                           .from(member)
+                           .where(builder)
+                           .fetch();
+    }
+
+    @Test
+    public void dynamicQueryUseWhereParam() throws Exception {
+        //given
+        String username = "member1";
+        Integer age = 10;
+        //when
+        List<Member> members = searchUser2(username, age);
+//        List<Member> members = searchUser3(username, age);
+
+        for (Member member1 : members) {
+            System.out.println("member1 = " + member1);
+        }
+
+        //then
+    }
+
+    private List<Member> searchUser2(String usernameCond, Integer ageCond) {
+        return queryFactory.select(member)
+                           .from(member)
+                           .where(usernameEq(usernameCond), ageEq(ageCond))
+                           .fetch();
+    }
+
+    private Predicate usernameEq(String usernameCond) {
+        return usernameCond != null ? member.username.eq(usernameCond) : null;
+    }
+
+    private Predicate ageEq(Integer ageCond) {
+        return ageCond != null ? member.age.eq(ageCond) : null;
+    }
+
+    private BooleanExpression usernameEq1(String usernameCond) {
+        return usernameCond != null ? member.username.eq(usernameCond) : null;
+    }
+
+    private BooleanExpression ageEq1(Integer ageCond) {
+        return ageCond != null ? member.age.eq(ageCond) : null;
+    }
+
+    private List<Member> searchUser3(String username, Integer age) {
+        return queryFactory.select(member)
+                           .from(member)
+                           .where(allEq(username, age))
+                           .fetch();
+    }
+
+    private BooleanExpression allEq(String usernameCond, Integer ageCond) {
+        return usernameEq1(usernameCond).and(ageEq1(ageCond));
     }
 
 
