@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.Dto.MemberDto;
 import study.querydsl.Dto.QUserDto;
@@ -908,5 +909,96 @@ public class QuerydslBasicTest {
         return usernameEq1(usernameCond).and(ageEq1(ageCond));
     }
 
+    @Test
+    public void bulkUpdate() throws Exception {
+        //given
+        //when
+        long result = queryFactory.update(member)
+                               .set(member.username, "비회원")
+                               .where(member.age.lt(28))
+                               .execute();
+
+        System.out.println("result = " + result);
+
+        // 벌크 연산 시 persistence context 에 업데이트가 되지 않는다!
+        // 그러므로 벌크로 execute 하는 경우 flush(), clear()를 해줘야 된다.
+        em.flush();
+        em.clear();
+
+        List<Member> memberList = queryFactory.select(member)
+                                         .from(member)
+                                         .fetch();
+
+        for (Member member1 : memberList) {
+            System.out.println("member1 = " + member1);
+        }
+
+        //then
+        assertThat(memberList.get(0).getUsername()).isEqualTo("비회원");
+        assertThat(memberList.get(1).getUsername()).isEqualTo("비회원");
+    }
+
+    @Test
+    public void bulkAdd() throws Exception {
+        //given
+        //when
+        long result = queryFactory.update(member)
+                                   .set(member.age, member.age.add(11)) // 빼기를 하고 싶으면 add() 안에 값을 -로 주면 된다. add(-10)
+                                   .execute();
+
+        em.flush();
+        em.clear();
+
+        System.out.println("result = " + result);
+
+        List<Member> memberList = queryFactory.selectFrom(member)
+                                         .fetch();
+
+        for (Member member1 : memberList) {
+            System.out.println("member1 = " + member1);
+        }
+
+        //then
+        assertThat(memberList).extracting("age").contains(21, 31, 41, 51);
+    }
+
+    @Test
+    public void bulkMultiply() throws Exception {
+        //given
+        //when
+        queryFactory.update(member)
+                .set(member.age, member.age.multiply(5))
+                .execute();
+
+        em.flush();
+        em.clear();
+
+        List<Member> memberList = queryFactory.selectFrom(member)
+                                         .fetch();
+
+        //then
+        assertThat(memberList).extracting("age").contains(50, 100, 150, 200);
+    }
+
+    @Test
+    public void bulkDelete() throws Exception {
+        //given
+        //when
+        queryFactory.delete(member)
+                .where(member.age.loe(20)).execute();
+
+        em.flush();
+        em.clear();
+
+        List<Member> memberList = queryFactory.selectFrom(member)
+                                         .fetch();
+
+        for (Member member1 : memberList) {
+            System.out.println("member1 = " + member1);
+        }
+
+        //then
+        assertThat(memberList.size()).isEqualTo(2);
+    }
 
 }
