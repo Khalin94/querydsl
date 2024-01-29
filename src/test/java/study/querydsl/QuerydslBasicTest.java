@@ -1001,4 +1001,35 @@ public class QuerydslBasicTest {
         assertThat(memberList.size()).isEqualTo(2);
     }
 
+    @Test
+    public void sqlFunction() throws Exception {
+        //given
+        //when
+        List<String> result = queryFactory.select(Expressions.stringTemplate("function('replace', {0}, {1}, {2})", member.username, "member", "M"))
+                                         .from(member)
+                                         .fetch();
+
+        System.out.println("result = " + result);
+
+        //then
+    }
+    
+    @Test
+    public void sqlFunction2() throws Exception {
+        //given
+        //when
+        List<Member> result = queryFactory.select(member)
+                                          .from(member)
+//                                         .where(member.username.eq(Expressions.stringTemplate("function('lower', {0})", member.username)))
+                                          // ANSI 표준에 있는 함수의 경우 querydsl 에서 지원하는 것들이 있다.
+                                          .where(member.username.eq(member.username.lower()))
+                                          .fetch();
+
+        for (Member member1 : result) {
+            System.out.println("member1 = " + member1);
+        }
+
+        //then
+    }
+
 }
