@@ -28,6 +28,44 @@ class MemberJPARepositoryTest {
     @Autowired
     private MemberJPARepository memberJPARepository;
 
+    private void setTeamsAndMembers() {
+        Team teamA = Team.builder()
+                         .name("teamA")
+                         .build();
+        Team teamB = Team.builder()
+                         .name("teamB")
+                         .build();
+
+        em.persist(teamA);
+        em.persist(teamB);
+
+        Member member1 = Member.builder()
+                               .username("member1")
+                               .age(10)
+                               .team(teamA)
+                               .build();
+        Member member2 = Member.builder()
+                               .username("member2")
+                               .age(20)
+                               .team(teamA)
+                               .build();
+        Member member3 = Member.builder()
+                               .username("member3")
+                               .age(30)
+                               .team(teamB)
+                               .build();
+
+        Member member4 = Member.builder()
+                               .username("member4")
+                               .age(40)
+                               .team(teamB)
+                               .build();
+        em.persist(member1);
+        em.persist(member2);
+        em.persist(member3);
+        em.persist(member4);
+    }
+
     @Test
     public void basicTest() throws Exception {
         //given
@@ -67,41 +105,7 @@ class MemberJPARepositoryTest {
     @Test
     public void searchTest() throws Exception {
         //given
-        Team teamA = Team.builder()
-                         .name("teamA")
-                         .build();
-        Team teamB = Team.builder()
-                         .name("teamB")
-                         .build();
-
-        em.persist(teamA);
-        em.persist(teamB);
-
-        Member member1 = Member.builder()
-                               .username("member1")
-                               .age(10)
-                               .team(teamA)
-                               .build();
-        Member member2 = Member.builder()
-                               .username("member2")
-                               .age(20)
-                               .team(teamA)
-                               .build();
-        Member member3 = Member.builder()
-                               .username("member3")
-                               .age(30)
-                               .team(teamB)
-                               .build();
-
-        Member member4 = Member.builder()
-                               .username("member4")
-                               .age(40)
-                               .team(teamB)
-                               .build();
-        em.persist(member1);
-        em.persist(member2);
-        em.persist(member3);
-        em.persist(member4);
+        setTeamsAndMembers();
 
         // 동적쿼리를 만들 때 주의점은 데이터를 다 가지고 오기 때문에 기본 조건이나 limit이 기본으로 걸려있는게 좋다.
         MemberSearchCondition cond = new MemberSearchCondition();
@@ -118,4 +122,41 @@ class MemberJPARepositoryTest {
 
     }
 
+    @Test
+    public void searchByConditionWhereTest() throws Exception {
+        //given
+        setTeamsAndMembers();
+
+        // 동적쿼리를 만들 때 주의점은 데이터를 다 가지고 오기 때문에 기본 조건이나 limit이 기본으로 걸려있는게 좋다.
+        MemberSearchCondition cond = new MemberSearchCondition();
+        cond.setAgeGoe(35);
+        cond.setAgeLoe(40);
+        cond.setTeamName("teamB");
+
+        //when
+        List<MemberTeamDto> members = memberJPARepository.searchByConditionWhere(cond);
+
+        //then
+        assertThat(members).extracting("username").containsExactly("member4");
+//        assertThat(members).extracting("username").containsExactly("member3", "member4");
+
+    }
+
+    @Test
+    public void searchMemberTest() throws Exception {
+        //given
+        setTeamsAndMembers();
+
+
+        //when
+        MemberSearchCondition cond = new MemberSearchCondition();
+        cond.setAgeGoe(35);
+        cond.setAgeLoe(40);
+        cond.setTeamName("teamB");
+
+        List<Member> members = memberJPARepository.searchMembers(cond);
+
+        //then
+        assertThat(members).extracting("username").containsExactly("member4");
+    }
 }

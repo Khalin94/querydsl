@@ -1,6 +1,7 @@
 package study.querydsl.repository;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -95,5 +96,53 @@ public class MemberJPARepository {
                            .where(builder)
                            .fetch();
     }
+
+    public List<MemberTeamDto> searchByConditionWhere(MemberSearchCondition cond) {
+        return queryFactory.select(new QMemberTeamDto(
+                                   member.id.as("memberId"),
+                                   member.username,
+                                   member.age,
+                                   team.id.as("teamId"),
+                                   team.name.as("teamName")
+                           ))
+                           .from(member)
+                           .join(member.team, team)
+                           .where(
+                                   usernameEq(cond.getUsername()),
+                                   teamNameEq(cond.getTeamName()),
+                                   ageGoe(cond.getAgeGoe()),
+                                   ageLoe(cond.getAgeLoe())
+                           )
+                           .fetch();
+    }
+
+    public List<Member> searchMembers(MemberSearchCondition cond) {
+        return queryFactory.selectFrom(member)
+                           .join(member.team, team)
+                           .where(
+                                   usernameEq(cond.getUsername()),
+                                   teamNameEq(cond.getTeamName()),
+                                   ageGoe(cond.getAgeGoe()),
+                                   ageLoe(cond.getAgeLoe())
+                           )
+                           .fetch();
+    }
+
+    private Predicate usernameEq(String username) {
+        return StringUtils.hasText(username) ? member.username.eq(username) : null;
+    }
+
+    private Predicate teamNameEq(String teamName) {
+        return StringUtils.hasText(teamName) ? team.name.eq(teamName) : null;
+    }
+
+    private Predicate ageGoe(Integer ageGoe) {
+        return ageGoe != null ? member.age.goe(ageGoe) : null;
+    }
+
+    private Predicate ageLoe(Integer ageLoe) {
+        return ageLoe != null ? member.age.loe(ageLoe) : null;
+    }
+
 
 }
