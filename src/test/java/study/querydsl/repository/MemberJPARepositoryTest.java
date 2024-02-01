@@ -1,12 +1,11 @@
 package study.querydsl.repository;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
-import study.querydsl.Dto.MemberSearchCondition;
-import study.querydsl.Dto.MemberTeamDto;
+import study.querydsl.dto.MemberSearchCondition;
+import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.Team;
 
@@ -16,7 +15,6 @@ import javax.persistence.PersistenceContext;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
 @SpringBootTest
@@ -148,7 +146,7 @@ class MemberJPARepositoryTest {
         setTeamsAndMembers();
 
 
-        //when
+        //when터
         MemberSearchCondition cond = new MemberSearchCondition();
         cond.setAgeGoe(35);
         cond.setAgeLoe(40);

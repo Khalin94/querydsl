@@ -4,7 +4,6 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.NonUniqueResultException;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
@@ -17,11 +16,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
-import study.querydsl.Dto.MemberDto;
-import study.querydsl.Dto.QUserDto;
-import study.querydsl.Dto.UserDto;
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QUserDto;
+import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
@@ -672,7 +670,7 @@ public class QuerydslBasicTest {
     @Test
     public void projectionsJPQL() throws Exception {
         //given
-        List<MemberDto> members = em.createQuery("select new study.querydsl.Dto.MemberDto(m.username, m.age) from Member m", MemberDto.class)
+        List<MemberDto> members = em.createQuery("select new study.querydsl.dto.MemberDto(m.username, m.age) from Member m", MemberDto.class)
                                     .getResultList();
 
         //when

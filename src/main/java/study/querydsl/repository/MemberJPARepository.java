@@ -5,12 +5,10 @@ import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
-import study.querydsl.Dto.MemberSearchCondition;
-import study.querydsl.Dto.MemberTeamDto;
-import study.querydsl.Dto.QMemberTeamDto;
+import study.querydsl.dto.MemberSearchCondition;
+import study.querydsl.dto.MemberTeamDto;
+import study.querydsl.dto.QMemberTeamDto;
 import study.querydsl.entity.Member;
-import study.querydsl.entity.QMember;
-import study.querydsl.entity.QTeam;
 
 import javax.persistence.EntityManager;
 import java.util.List;
