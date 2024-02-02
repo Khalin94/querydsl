@@ -142,4 +142,22 @@ class MemberRepositoryTest {
         assertThat(size).isEqualTo(3);
     }
 
+    @Test
+    public void searchComplexOptimizeTest() throws Exception {
+        //given
+        setTeamsAndMembers();
+        MemberSearchCondition cond = new MemberSearchCondition();
+        PageRequest pageRequest = PageRequest.of(0, 3);
+
+        //when
+        Page<MemberTeamDto> result = memberRepository.searchComplexOptimize(cond, pageRequest);
+
+        List<MemberTeamDto> content = result.getContent();
+        int size = result.getSize();
+
+        //then
+        assertThat(result).extracting("username").containsExactly("member1", "member2", "member3");
+        assertThat(size).isEqualTo(3);
+    }
+
 }
