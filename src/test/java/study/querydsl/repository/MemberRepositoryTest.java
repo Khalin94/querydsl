@@ -4,6 +4,9 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
@@ -99,5 +102,44 @@ class MemberRepositoryTest {
         assertThat(specMembers).extracting("username").containsExactly("member3", "member4");
     }
 
+
+    @Test
+    public void searchSimpleTest() throws Exception {
+        //given
+        setTeamsAndMembers();
+        MemberSearchCondition cond = new MemberSearchCondition();
+        PageRequest pageRequest = PageRequest.of(0, 3);
+        //when
+        Page<MemberTeamDto> result = memberRepository.searchSimple(cond, pageRequest);
+        List<MemberTeamDto> content = result.getContent();
+        int size = result.getSize();
+
+        for (MemberTeamDto memberTeamDto : content) {
+            System.out.println("memberTeamDto = " + memberTeamDto);
+        }
+
+        //then
+        assertThat(result).extracting("username").containsExactly("member1", "member2", "member3");
+        assertThat(size).isEqualTo(3);
+
+    }
+
+    @Test
+    public void searchComplexTest() throws Exception {
+        //given
+        setTeamsAndMembers();
+        MemberSearchCondition cond = new MemberSearchCondition();
+        PageRequest pageRequest = PageRequest.of(0, 3);
+
+        //when
+        Page<MemberTeamDto> result = memberRepository.searchComplex(cond, pageRequest);
+
+        List<MemberTeamDto> content = result.getContent();
+        int size = result.getSize();
+
+        //then
+        assertThat(result).extracting("username").containsExactly("member1", "member2", "member3");
+        assertThat(size).isEqualTo(3);
+    }
 
 }
