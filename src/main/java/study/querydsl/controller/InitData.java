@@ -37,7 +37,7 @@ public class InitData {
             em.persist(teamA);
             em.persist(teamB);
 
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 101; i++) {
                 Team selectedTeam = i % 2 == 0 ? teamA : teamB;
 
                 em.persist(new Member("member"+i, i, selectedTeam));
